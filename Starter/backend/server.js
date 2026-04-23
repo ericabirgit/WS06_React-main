@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,6 +10,8 @@ const postsRouter = require('./routes/posts');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const publicDir = path.join(__dirname, 'public');
+const frontendDist = path.join(__dirname, '../frontend/dist');
+const hasFrontendDist = fs.existsSync(frontendDist);
 
 // ─── TODO: Write the connectToDatabase function ──────────────────────────────
 // This function should:
@@ -39,17 +42,36 @@ async function connectToDatabase() {
 
 app.locals.publicDir = publicDir;
 app.use(express.json());
-app.use(express.static(publicDir));
 
-app.use('/', pagesRouter);
+if (hasFrontendDist) {
+  app.use(express.static(frontendDist));
+} else {
+  app.use(express.static(publicDir));
+}
+
 app.use('/api/posts', postsRouter);
 
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(publicDir, '404.html'));
-});
+if (hasFrontendDist) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+
+    return res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  app.use('/', pagesRouter);
+
+  app.use((req, res) => {
+    res.status(404).sendFile(path.join(publicDir, '404.html'));
+  });
+}
 
 app.use((error, req, res, next) => {
   console.error(error.stack);
+  if (hasFrontendDist) {
+    return res.status(500).sendFile(path.join(frontendDist, 'index.html'));
+  }
   res.status(500).sendFile(path.join(publicDir, '500.html'));
 });
 

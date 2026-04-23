@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "cd Starter/backend && npm run dev"
+    "build": "cd Starter/frontend && npm install && npm run build",
+    "dev": "cd Starter/backend && npm run dev",
+    "postinstall": "npm run build"
   },
   "engines": {
     "node": ">=20.0.0"
